@@ -1,0 +1,9 @@
+BRK-REQ-101: The braking controller shall detect wheel-speed sensor failure within 100 ms.
+
+ADAS-REQ-101: The ADAS controller shall issue a collision warning when the defined collision condition occurs.
+
+TPMS-REQ-101: The system shall detect low tyre pressure below 2.0 bar.
+
+BRK-REQ-102: The braking controller shall detect wheel-speed sensor failure.
+
+The system shall detect wheel-speed sensor failure and log a diagnostic fault code.

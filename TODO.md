@@ -34,30 +34,52 @@
 
 ---
 
-## 📋 Phase 2: Requirement Upload & Document Parsing
-- [ ] Parser service supporting PDF, DOCX, and TXT.
-- [ ] Token detection for `REQ-001`, `BRK-001`, `SRS-001`.
-- [ ] Natural language requirement extractor with automatic ID assignment.
-- [ ] File upload API endpoint (`POST /api/v1/requirements/upload`).
+## 🏁 Phase 2: Requirement Upload, Document Parsing & Deterministic Normalization *(COMPLETED)*
+- [x] Document Ingestion service (`app/services/document_extractor.py`) supporting PDF, DOCX, and TXT.
+- [x] File upload endpoint: `POST /api/v1/requirements/upload` with extension, MIME, and size validation (`MAX_REQUIREMENT_UPLOAD_MB = 10`).
+- [x] Secure file storage & filename sanitization (`app/core/file_security.py`).
+- [x] Generalized requirement token detection (`BRK-001`, `BRK-REQ-001`, `ADAS-REQ-001`, `SRS-001`).
+- [x] Natural language requirement extractor with deterministic temporary ID assignment (`TMP-REQ-001`).
+- [x] Duplicate requirement handling within document and against existing database requirements.
+- [x] Deterministic normalization (`app/services/requirement_normalizer.py`): inputs, outputs, conditions, thresholds, timing, safety relevance.
+- [x] Zero-hallucination guarantee: missing parameters produce specification gaps (`MISSING_THRESHOLD`, `MISSING_TIMEOUT`, `AMBIGUOUS_BOUNDARY`).
+- [x] Source traceability structure: `source_document`, `source_page`, `source_section`, `source_location`.
+- [x] Database persistence: `RequirementDocument` and `Requirement` models with `source_type` ("seed" vs "uploaded_document").
+- [x] Interactive Requirements UI: drag-and-drop uploader, extraction status, and document traceability display.
+- [x] Automated test suite: 28/28 tests passing (`tests/test_phase2_requirements.py`).
+- [x] Regression verification: 13/13 Phase 1 tests passing, 63/63 total tests passing.
+- [x] Live end-to-end verification passing: 10/10 checks (`verify_phase2_live.py`).
 
 ---
 
-## 📋 Phase 3: Requirement Normalization & Completeness Engine
-- [ ] Structured extraction of inputs, outputs, conditions, thresholds, timing, dependencies.
-- [ ] Completeness classification: `COMPLETE`, `INCOMPLETE`, `AMBIGUOUS`, `CONTRADICTORY`.
-- [ ] Automatic specification gap generation for missing safety-critical thresholds.
+## 🏁 Phase 3: AI Test Case Generation & Deterministic Validation *(COMPLETED)*
+- [x] AI Provider abstraction layer: `BaseAIProvider`, `MockAIProvider`, `GeminiAIProvider`, `get_ai_provider`.
+- [x] Context Assembler: `TestGenerationContextAssembler` for controlled requirement and architecture grounding without invented relations.
+- [x] Zero-hallucination deterministic validator: `TestCaseValidator` with 12-point quality checks.
+- [x] Strict safety guardrails:
+  - [x] Rejection of hallucinated timing bounds (e.g. preserves 100 ms for `BRK-REQ-101`, flags `MISSING_TIMEOUT` / `REQUIRES_REVIEW` for `BRK-REQ-102`).
+  - [x] Rejection of hallucinated stability thresholds (e.g. flags `AMBIGUOUS_BOUNDARY` for qualitative stability requirements).
+  - [x] Detection of unknown ECUs, sensors, or signals against vehicle architecture.
+  - [x] Strict prohibition of execution status claims (`PASS`/`FAIL`) during test generation phase.
+- [x] Data Model & Database:
+  - [x] Added `generation_provider`, `generation_model`, `generation_status`, `validation_status`, `validation_findings_json`, `traceability_json`, `generation_context_json` to `TestCase`.
+  - [x] Created `TestGenerationRun` model and `test_generation_runs` audit table.
+- [x] REST API Endpoints:
+  - [x] `POST /api/v1/test-generation/generate`
+  - [x] `GET /api/v1/test-generation/context/{requirement_id}`
+  - [x] `POST /api/v1/test-generation/validate`
+  - [x] `GET /api/v1/test-generation/history`
+- [x] Frontend Implementation:
+  - [x] "Generate Test Cases" button and multi-requirement selection in `RequirementsView`.
+  - [x] Test generation configuration modal (categories, tests per requirement, provider).
+  - [x] AI Generated badges, Provider indicator, and Deterministic Validation status (`VALID`, `REQUIRES_REVIEW`) in `TestCasesView`.
+  - [x] Requirement document traceability card and acknowledged specification gaps in test detail modal.
+- [x] Automated test suite: `backend/tests/test_phase3_test_generation.py` (12/12 passing).
+- [x] Full regression test run: 75/75 tests passing across Phases 1, 2, and 3.
 
 ---
 
-## 📋 Phase 4: AI Test Case Generator
-- [ ] `AIProvider` interface definition.
-- [ ] `GeminiProvider` implementation with Pydantic JSON schema mode.
-- [ ] Architecture-aware prompt crafting incorporating ECU dependencies and signal constraints.
-- [ ] Fallback deterministic generator for offline and deterministic environments.
-
----
-
-## 📋 Phase 5: Pune / India Scenario Engine
+## 📋 Phase 4: Pune / India Scenario Engine
 - [ ] Scenario catalog UI for 6 Pune categories.
 - [ ] Interactive Compound Scenario Builder.
 - [ ] Scenario parameter synthesis (road friction, visibility, traffic density).

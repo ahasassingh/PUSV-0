@@ -33,6 +33,16 @@ class TestCase(Base):
     
     is_ai_generated = Column(Boolean, default=True)
     status = Column(String, default="PROPOSED", index=True) # PROPOSED, VALIDATED, BLOCKED, APPROVED
+    
+    # Phase 3: AI Generation & Deterministic Validation metadata
+    generation_provider = Column(String, nullable=True, default=None, index=True) # "mock", "gemini", etc.
+    generation_model = Column(String, nullable=True, default=None)
+    generation_status = Column(String, default="GENERATED", index=True) # GENERATED, REQUIRES_REVIEW, FAILED
+    validation_status = Column(String, default="VALID", index=True) # VALID, REQUIRES_REVIEW, INVALID
+    validation_findings_json = Column(Text, default="[]")
+    traceability_json = Column(Text, default="{}")
+    generation_context_json = Column(Text, default="{}")
+    
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # JSON helper accessors
@@ -112,6 +122,56 @@ class TestCase(Base):
         except: return []
     @specification_gaps.setter
     def specification_gaps(self, val): self.specification_gaps_json = json.dumps(val)
+
+    @property
+    def validation_findings(self):
+        try: return json.loads(self.validation_findings_json or "[]")
+        except: return []
+    @validation_findings.setter
+    def validation_findings(self, val): self.validation_findings_json = json.dumps(val or [])
+
+    @property
+    def traceability(self):
+        try: return json.loads(self.traceability_json or "{}")
+        except: return {}
+    @traceability.setter
+    def traceability(self, val): self.traceability_json = json.dumps(val or {})
+
+    @property
+    def generation_context(self):
+        try: return json.loads(self.generation_context_json or "{}")
+        except: return {}
+    @generation_context.setter
+    def generation_context(self, val): self.generation_context_json = json.dumps(val or {})
+
+
+class TestGenerationRun(Base):
+    __tablename__ = "test_generation_runs"
+
+    id = Column(String, primary_key=True, index=True)
+    provider = Column(String, nullable=False, default="mock", index=True)
+    model = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    requested_requirement_count = Column(Integer, default=0)
+    generated_test_count = Column(Integer, default=0)
+    validation_status = Column(String, default="VALID", index=True) # VALID, REQUIRES_REVIEW, INVALID, MIXED, FAILED
+    error_message = Column(Text, nullable=True)
+    requirement_ids_json = Column(Text, default="[]")
+    generated_test_ids_json = Column(Text, default="[]")
+
+    @property
+    def requirement_ids(self):
+        try: return json.loads(self.requirement_ids_json or "[]")
+        except: return []
+    @requirement_ids.setter
+    def requirement_ids(self, val): self.requirement_ids_json = json.dumps(val or [])
+
+    @property
+    def generated_test_ids(self):
+        try: return json.loads(self.generated_test_ids_json or "[]")
+        except: return []
+    @generated_test_ids.setter
+    def generated_test_ids(self, val): self.generated_test_ids_json = json.dumps(val or [])
 
 
 class TestResult(Base):

@@ -50,76 +50,52 @@ The application is structured as a decoupled full-stack architecture:
 
 ---
 
-## 3. Development Phases (Phases 1 - 10)
+## 3. Development Sequence (Canonical Phases 1 - 8)
 
-### Phase 1: Application Shell, Database & PUSV-01 Seed Data *(CURRENT TARGET)*
-- Setup FastAPI backend project layout and SQLite database schema via SQLAlchemy.
-- Setup React + TypeScript + Vite + Tailwind CSS frontend shell.
-- Implement comprehensive seed dataset:
-  - Reference vehicle: PUSV-01.
-  - 8 Logical ECUs (`ADAS_ECU`, `BRAKE_ECU`, `VEHICLE_DYNAMICS_ECU`, `TPMS_ECU`, `POWERTRAIN_ECU`, `BODY_ECU`, `GATEWAY_ECU`, `TELEMATICS_ECU`).
-  - 15+ Sensors and Actuators.
-  - 25+ Canonical CAN/CAN-FD signals with min/max/cycle times.
-  - 40 Initial automotive software requirements (Braking, ADAS, TPMS, Suspension/Road, Communication, Diagnostics) with intentional specification gaps.
-  - 20 Pune/India driving scenarios across 6 categories.
-  - 50+ Seed automotive test cases demonstrating multi-ECU dependencies.
-- Verify Phase 1 with automated backend test suite and running server.
+### Phase 1: Architecture, Database & PUSV-01 Seed Foundation *(COMPLETE)*
+- FastAPI backend, SQLite database schema via SQLAlchemy, React TypeScript engineering frontend.
+- Reference vehicle: PUSV-01 (Pune Urban Safety Vehicle) with 8 Logical ECUs, 15+ sensors/actuators, 25+ CAN signals, 40+ reference requirements, and 20 Pune scenarios.
+- 13/13 Phase 1 automated regression tests passing.
 
-### Phase 2: Requirement Upload & Document Parsing
-- Support PDF, DOCX, and TXT upload with secure file sanitization.
-- Regex and semantic heuristics for requirement token detection (`REQ-001`, `BRK-001`, `SRS-001`).
-- Natural language requirement extraction with auto-generated temporary IDs.
+### Phase 2: Requirement Upload, Document Parsing & Deterministic Normalization *(COMPLETE)*
+- Document upload endpoint: `POST /api/v1/requirements/upload` supporting `.pdf`, `.docx`, and `.txt`.
+- Configurable upload size limit (`MAX_REQUIREMENT_UPLOAD_MB = 10`).
+- Deterministic text extraction (TXT, DOCX, and selectable PDF). OCR explicitly disabled for scanned/image PDFs (`EXTRACTION_FAILED_SCANNED_PDF`).
+- Generalized requirement ID detection (e.g. `BRK-001`, `BRK-REQ-001`, `ADAS-REQ-001`, `SRS-001`) and deterministic temporary ID generation (`TMP-REQ-001`).
+- Deterministic field extraction (inputs, outputs, conditions, threshold, timing, safety relevance) using controlled vocabularies without LLM hallucination.
+- Specification gap detection: identifies missing thresholds (`MISSING_THRESHOLD`), missing timeouts (`MISSING_TIMEOUT`), and ambiguous boundaries without fabricating values.
+- Source traceability: preserves `source_document`, `source_page`, `source_section`, and `source_location`.
+- Database persistence: `requirement_documents` audit trail and `requirements` differentiated by `source_type` ("seed" vs "uploaded_document").
+- Requirements UI: drag-and-drop document ingestion, status badges, and source traceability matrix.
+- 28/28 Phase 2 automated tests passing; 63/63 total tests passing; live verification 10/10 passed.
 
-### Phase 3: Requirement Normalizer & Completeness Engine
-- Normalize raw textual requirements into structured Pydantic entities (`id`, `system`, `ecu`, `inputs`, `outputs`, `conditions`, `thresholds`, `timing`, `dependencies`, `safety_relevance`, `completeness_status`).
-- Automatic completeness classification: `COMPLETE`, `INCOMPLETE`, `AMBIGUOUS`, `CONTRADICTORY`.
+### Phase 3: AI Test-Case Generation from Normalized Requirements *(COMPLETE)*
+- Canonical pipeline: Normalized Requirement -> Context Assembly -> AI Test Generator -> Structured Test Case -> Deterministic Test-Quality Validator -> Persistence.
+- Core principle: "AI generates. Deterministic systems validate." Never invent safety-critical engineering values.
+- AI Provider abstraction layer (`BaseAIProvider`, `MockAIProvider`, `GeminiAIProvider`, `get_ai_provider`).
+- Zero hallucination validator (`TestCaseValidator`): 12-point deterministic check ensuring no invented thresholds, no invented timeouts, and preserving `MISSING_TIMEOUT` / `AMBIGUOUS_BOUNDARY` gaps as `REQUIRES_REVIEW`.
+- Test generation APIs:
+  - `POST /api/v1/test-generation/generate`
+  - `GET /api/v1/test-generation/context/{requirement_id}`
+  - `POST /api/v1/test-generation/validate`
+  - `GET /api/v1/test-generation/history`
+- Frontend UI: Single and bulk requirement test generation modal, configurable categories, provider selector, AI Generated badge, validation status tags (`VALID`, `REQUIRES_REVIEW`), and traceability card.
+- 12/12 Phase 3 automated tests passing; 75/75 total project tests passing.
 
-### Phase 4: AI Test Case Generator
-- Structured prompt engineering leveraging PUSV-01 vehicle topology and selected operational domain scenarios.
-- Strict Pydantic JSON schema output enforcement.
-- Fallback & offline-resilient generation engine.
+### Phase 4: Pune / India Scenario Engine & Compound Scenarios *(FUTURE)*
+- Operational design domain engine across 6 categories (dense traffic, road conditions, monsoon hazards, intersections, tyre conditions, sensor failures).
 
-### Phase 5: Pune / India Scenario Engine
-- Scenario catalog across 6 categories:
-  1. Dense Traffic (stop-and-go, motorcycle filtering, pedestrian Jaywalking)
-  2. Road Conditions (speed breakers, smooth, uneven, deep potholes)
-  3. Monsoon Hazards (water spray, aquaplaning, degraded camera confidence)
-  4. Intersections (uncontrolled junctions, obstructed signals, crossing cows/two-wheelers)
-  5. Tyre Conditions (puncture, low pressure, thermal buildup, sensor drop)
-  6. Sensor / ECU Failures (stale CAN frame, bus timeout, sensor blindness)
-- Compound Scenario Builder: allow combining orthogonal conditions into multi-ECU stress scenarios.
+### Phase 5: Knowledge Graph & Multi-ECU Dependency Engine *(FUTURE)*
+- NetworkX topological dependency graph modeling cascading ECU impacts and CAN delay propagation.
 
-### Phase 6: Vehicle Knowledge Graph
-- NetworkX-powered directed multi-graph:
-  - Nodes: `Requirement`, `ECU`, `Sensor`, `Signal`, `Actuator`, `Function`, `Scenario`, `TestCase`, `Fault`.
-  - Edges: `REQUIRES`, `PRODUCES`, `CONSUMES`, `DEPENDS_ON`, `TESTS`, `AFFECTS`, `FAILS_WITH`, `RECOVERS_FROM`.
-- Interactive UI visualization for path tracing (e.g. Front Camera → ADAS_ECU → AEB_REQUEST → BRAKE_ECU → Hydraulic Modulator).
+### Phase 6: Simulation & Deterministic PASS / FAIL / BLOCKED Validation *(FUTURE)*
+- Lightweight automotive physics models (TTC, TPMS dynamic curve, CAN jitter, IMU shock).
 
-### Phase 7: Deterministic Simulation Engine
-- Lightweight deterministic simulation models:
-  1. **Time-To-Collision (TTC) & Braking**: $TTC = \frac{d_{rel}}{v_{rel}}$ evaluated against dynamic speed curves.
-  2. **TPMS Dynamic Threshold**: Pressure vs temperature compensation and leak rate classification.
-  3. **CAN Communication Bus**: Heartbeat monitoring, jitter, stale message detection, timeout fault injection.
-  4. **Road Roughness & Pothole**: Vertical acceleration shock profiling from simulated IMU.
-  5. **Braking State Machine**: `NORMAL` → `WARNING` → `BRAKING_REQUEST` → `BRAKING` → `RECOVERY` / `FAULT`.
-- Execution results: `PASS`, `FAIL`, `BLOCKED` (with actionable blocked reasons).
+### Phase 7: Coverage, Specification Gaps & Exports *(FUTURE)*
+- Multi-dimensional test coverage metrics and formal compliance export.
 
-### Phase 8: Coverage & Specification Gap Engine
-- Deterministic calculation of:
-  - Requirement Coverage (%)
-  - ECU Coverage (%)
-  - Scenario Coverage (%)
-  - Fault Injection Coverage (%)
-  - Boundary Condition Coverage (%)
-- Automated Gap Identification: missing thresholds, missing timeouts, undefined degraded modes, ambiguous recovery boundaries.
-
-### Phase 9: Reporting & Export Engine
-- Export complete test specifications and execution logs to JSON, CSV, and tabular data.
-- Executive summary with requirement traceability matrices.
-
-### Phase 10: Engineering Polish & Demo Showcase
-- High-contrast automotive dark theme with technical typography.
-- Primary Demo Script: "Pune Monsoon Urban Traffic Emergency Braking with Motorcycle Cut-in and Low Tyre Pressure".
+### Phase 8: Hackathon Demo Polish *(FUTURE)*
+- Polished end-to-end demo flow.
 
 ---
 

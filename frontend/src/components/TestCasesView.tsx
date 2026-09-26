@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api, type TestCaseItem } from '../api/client';
 import { 
-  CheckCircle2, AlertTriangle, FileCheck, ArrowRight, X, Play 
+  CheckCircle2, AlertTriangle, FileCheck, ArrowRight, X, Play,
+  Sparkles, ShieldCheck, FileText
 } from 'lucide-react';
 
 export const TestCasesView: React.FC = () => {
@@ -9,6 +10,8 @@ export const TestCasesView: React.FC = () => {
   const [selectedTestCase, setSelectedTestCase] = useState<any | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [originFilter, setOriginFilter] = useState<string>(''); // '', 'AI_GENERATED', 'SEEDED'
+  const [valStatusFilter, setValStatusFilter] = useState<string>(''); // '', 'VALID', 'REQUIRES_REVIEW', 'INVALID'
   const [simulating, setSimulating] = useState<boolean>(false);
 
   const loadTestCases = () => {
@@ -77,23 +80,73 @@ export const TestCasesView: React.FC = () => {
           ))}
         </div>
 
-        {/* Status Filter */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '4px 10px', fontSize: '12px', borderColor: statusFilter === 'VALIDATED' ? 'var(--status-pass)' : 'var(--border-subtle)' }}
-            onClick={() => setStatusFilter(statusFilter === 'VALIDATED' ? '' : 'VALIDATED')}
-          >
-            Pass Only
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '4px 10px', fontSize: '12px', borderColor: statusFilter === 'BLOCKED' ? 'var(--status-blocked)' : 'var(--border-subtle)' }}
-            onClick={() => setStatusFilter(statusFilter === 'BLOCKED' ? '' : 'BLOCKED')}
-          >
-            Blocked Only
-          </button>
-        </div>
+          {/* Status Filter */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>SIM:</span>
+            <button
+              className="btn-secondary"
+              style={{ padding: '3px 8px', fontSize: '11px', borderColor: statusFilter === 'VALIDATED' ? 'var(--status-pass)' : 'var(--border-subtle)' }}
+              onClick={() => setStatusFilter(statusFilter === 'VALIDATED' ? '' : 'VALIDATED')}
+            >
+              Pass
+            </button>
+            <button
+              className="btn-secondary"
+              style={{ padding: '3px 8px', fontSize: '11px', borderColor: statusFilter === 'BLOCKED' ? 'var(--status-blocked)' : 'var(--border-subtle)' }}
+              onClick={() => setStatusFilter(statusFilter === 'BLOCKED' ? '' : 'BLOCKED')}
+            >
+              Blocked
+            </button>
+          </div>
+
+          {/* Origin Filter */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ORIGIN:</span>
+            <button
+              className="btn-secondary"
+              style={{
+                padding: '3px 8px',
+                fontSize: '11px',
+                borderColor: originFilter === 'AI_GENERATED' ? 'var(--accent-cyan)' : 'var(--border-subtle)',
+                color: originFilter === 'AI_GENERATED' ? 'var(--accent-cyan)' : 'var(--text-faint)'
+              }}
+              onClick={() => setOriginFilter(originFilter === 'AI_GENERATED' ? '' : 'AI_GENERATED')}
+            >
+              <Sparkles size={11} style={{ display: 'inline', marginRight: '3px' }} /> AI Generated
+            </button>
+            <button
+              className="btn-secondary"
+              style={{
+                padding: '3px 8px',
+                fontSize: '11px',
+                borderColor: originFilter === 'SEEDED' ? 'var(--accent-cyan)' : 'var(--border-subtle)',
+                color: originFilter === 'SEEDED' ? 'var(--accent-cyan)' : 'var(--text-faint)'
+              }}
+              onClick={() => setOriginFilter(originFilter === 'SEEDED' ? '' : 'SEEDED')}
+            >
+              Seeded
+            </button>
+          </div>
+
+          {/* Validation Status Filter */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>VALIDATION:</span>
+            {['VALID', 'REQUIRES_REVIEW'].map(v => (
+              <button
+                key={v}
+                className="btn-secondary"
+                style={{
+                  padding: '3px 8px',
+                  fontSize: '11px',
+                  borderColor: valStatusFilter === v ? 'var(--accent-cyan)' : 'var(--border-subtle)',
+                  color: valStatusFilter === v ? 'var(--accent-cyan)' : 'var(--text-faint)'
+                }}
+                onClick={() => setValStatusFilter(valStatusFilter === v ? '' : v)}
+              >
+                {v === 'VALID' ? 'Valid' : 'Requires Review'}
+              </button>
+            ))}
+          </div>
       </div>
 
       {/* Test Cases Table */}
@@ -114,88 +167,131 @@ export const TestCasesView: React.FC = () => {
               <tr>
                 <th style={{ width: '130px' }}>Test Code</th>
                 <th>Title / Scenario Description</th>
-                <th style={{ width: '140px' }}>Category</th>
-                <th style={{ width: '70px' }}>Priority</th>
+                <th style={{ width: '130px' }}>Category</th>
+                <th style={{ width: '65px' }}>Priority</th>
                 <th>Participating ECUs</th>
-                <th style={{ width: '120px' }}>Requirements</th>
-                <th style={{ width: '110px' }}>Sim Status</th>
-                <th style={{ width: '110px' }}>Action</th>
+                <th style={{ width: '110px' }}>Origin / AI</th>
+                <th style={{ width: '120px' }}>Deterministic Validation</th>
+                <th style={{ width: '95px' }}>Sim Status</th>
+                <th style={{ width: '90px' }}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {testCases.map((tc) => {
-                const resStatus = tc.latest_result?.status || tc.status;
-                const isBlocked = resStatus === 'BLOCKED';
-                return (
-                  <tr 
-                    key={tc.id} 
-                    onClick={() => handleSelectTest(tc.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td className="font-mono" style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>
-                      {tc.code}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#ffffff', marginBottom: '2px' }}>{tc.title}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {tc.scenario}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge badge-muted" style={{ fontSize: '11px' }}>
-                        {tc.category}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge font-mono" style={{
-                        background: tc.priority === 'P0' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                        color: tc.priority === 'P0' ? '#f87171' : '#60a5fa'
-                      }}>
-                        {tc.priority}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {tc.ecu_under_test.slice(0, 3).map((e) => (
-                          <span key={e} className="badge badge-muted font-mono" style={{ fontSize: '10px' }}>{e}</span>
-                        ))}
-                        {tc.ecu_under_test.length > 3 && (
-                          <span className="badge badge-muted font-mono" style={{ fontSize: '10px' }}>
-                            +{tc.ecu_under_test.length - 3}
+              {testCases
+                .filter(tc => {
+                  if (originFilter === 'AI_GENERATED') return tc.is_ai_generated || !!tc.generation_provider;
+                  if (originFilter === 'SEEDED') return !tc.generation_provider && !tc.code.startsWith('TC-AI-');
+                  return true;
+                })
+                .filter(tc => {
+                  if (valStatusFilter) return (tc.validation_status || 'VALID') === valStatusFilter;
+                  return true;
+                })
+                .map((tc) => {
+                  const resStatus = tc.latest_result?.status || tc.status;
+                  const isBlocked = resStatus === 'BLOCKED';
+                  const isAi = tc.is_ai_generated || !!tc.generation_provider || tc.code.startsWith('TC-AI-');
+                  const valStatus = tc.validation_status || (tc.specification_gaps?.length > 0 ? 'REQUIRES_REVIEW' : 'VALID');
+
+                  return (
+                    <tr 
+                      key={tc.id} 
+                      onClick={() => handleSelectTest(tc.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td className="font-mono" style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>
+                        {tc.code}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#ffffff', marginBottom: '2px' }}>{tc.title}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {tc.scenario}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge badge-muted" style={{ fontSize: '11px' }}>
+                          {tc.category}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge font-mono" style={{
+                          background: tc.priority === 'P0' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: tc.priority === 'P0' ? '#f87171' : '#60a5fa'
+                        }}>
+                          {tc.priority}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {tc.ecu_under_test.slice(0, 3).map((e) => (
+                            <span key={e} className="badge badge-muted font-mono" style={{ fontSize: '10px' }}>{e}</span>
+                          ))}
+                          {tc.ecu_under_test.length > 3 && (
+                            <span className="badge badge-muted font-mono" style={{ fontSize: '10px' }}>
+                              +{tc.ecu_under_test.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {isAi ? (
+                          <div>
+                            <span className="badge badge-cyan" style={{ fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Sparkles size={10} /> AI GENERATED
+                            </span>
+                            <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                              Prov: {(tc.generation_provider || 'mock').toUpperCase()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="badge badge-muted" style={{ fontSize: '10px' }}>
+                            SEEDED
                           </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="font-mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      {tc.requirement_ids.slice(0, 2).join(', ')}
-                      {tc.requirement_ids.length > 2 && ` +${tc.requirement_ids.length - 2}`}
-                    </td>
-                    <td>
-                      {resStatus === 'PASS' && (
-                        <span className="badge badge-pass"><CheckCircle2 size={11} /> PASS</span>
-                      )}
-                      {isBlocked && (
-                        <span className="badge badge-blocked" title={tc.latest_result?.blocked_reason}><AlertTriangle size={11} /> BLOCKED</span>
-                      )}
-                      {!isBlocked && resStatus !== 'PASS' && (
-                        <span className="badge badge-muted">{resStatus}</span>
-                      )}
-                    </td>
-                    <td>
-                      <button 
-                        className="btn-secondary" 
-                        style={{ padding: '4px 10px', fontSize: '11px' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectTest(tc.id);
-                        }}
-                      >
-                        Inspect <ArrowRight size={12} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td>
+                        {valStatus === 'VALID' && (
+                          <span className="badge badge-pass" style={{ fontSize: '10px' }}>
+                            <ShieldCheck size={11} /> VALID
+                          </span>
+                        )}
+                        {valStatus === 'REQUIRES_REVIEW' && (
+                          <span className="badge badge-fail" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                            <AlertTriangle size={11} /> REQUIRES REVIEW
+                          </span>
+                        )}
+                        {valStatus === 'INVALID' && (
+                          <span className="badge badge-fail" style={{ fontSize: '10px' }}>
+                            INVALID
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {resStatus === 'PASS' && (
+                          <span className="badge badge-pass"><CheckCircle2 size={11} /> PASS</span>
+                        )}
+                        {isBlocked && (
+                          <span className="badge badge-blocked" title={tc.latest_result?.blocked_reason}><AlertTriangle size={11} /> BLOCKED</span>
+                        )}
+                        {!isBlocked && resStatus !== 'PASS' && (
+                          <span className="badge badge-muted">{resStatus}</span>
+                        )}
+                      </td>
+                      <td>
+                        <button 
+                          className="btn-secondary" 
+                          style={{ padding: '4px 10px', fontSize: '11px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectTest(tc.id);
+                          }}
+                        >
+                          Inspect <ArrowRight size={12} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -251,6 +347,19 @@ export const TestCasesView: React.FC = () => {
                   {selectedTestCase.latest_result?.status === 'BLOCKED' && (
                     <span className="badge badge-blocked"><AlertTriangle size={11} /> SIM: BLOCKED</span>
                   )}
+                  {selectedTestCase.validation_status === 'VALID' && (
+                    <span className="badge badge-pass"><ShieldCheck size={11} /> DETERMINISTICALLY VALIDATED</span>
+                  )}
+                  {selectedTestCase.validation_status === 'REQUIRES_REVIEW' && (
+                    <span className="badge" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}>
+                      <AlertTriangle size={11} /> REQUIRES ENGINEERING REVIEW
+                    </span>
+                  )}
+                  {(selectedTestCase.is_ai_generated || selectedTestCase.generation_provider) && (
+                    <span className="badge badge-cyan">
+                      <Sparkles size={11} /> AI GENERATED ({selectedTestCase.generation_provider || 'MOCK'})
+                    </span>
+                  )}
                 </div>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#ffffff' }}>
                   {selectedTestCase.title}
@@ -267,6 +376,86 @@ export const TestCasesView: React.FC = () => {
             {/* Modal Body */}
             <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
+              {/* Phase 3 Validation Finding Banner */}
+              {selectedTestCase.validation_findings && selectedTestCase.validation_findings.length > 0 && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: selectedTestCase.validation_status === 'REQUIRES_REVIEW' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  border: `1px solid ${selectedTestCase.validation_status === 'REQUIRES_REVIEW' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                  borderRadius: '6px',
+                  fontSize: '12px'
+                }}>
+                  <div style={{
+                    fontWeight: 700,
+                    color: selectedTestCase.validation_status === 'REQUIRES_REVIEW' ? '#fbbf24' : '#f87171',
+                    marginBottom: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <ShieldCheck size={16} /> Deterministic Validation Findings:
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    {selectedTestCase.validation_findings.map((f: any, idx: number) => (
+                      <li key={idx}>
+                        <strong style={{ color: 'var(--accent-cyan)' }}>[{f.code}]:</strong> {f.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Source Document Traceability Card */}
+              {selectedTestCase.traceability?.source_document && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'rgba(6, 182, 212, 0.08)',
+                  border: '1px solid rgba(6, 182, 212, 0.25)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="var(--accent-cyan)" />
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Source Requirement Document: </span>
+                      <strong style={{ color: '#ffffff' }}>{selectedTestCase.traceability.source_document}</strong>
+                      {selectedTestCase.traceability.source_page && (
+                        <span style={{ color: 'var(--accent-cyan)', marginLeft: '6px' }}>
+                          (Page {selectedTestCase.traceability.source_page})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="badge badge-cyan font-mono">
+                    Req: {selectedTestCase.traceability.requirement_id || selectedTestCase.requirement_ids[0]}
+                  </span>
+                </div>
+              )}
+
+              {/* Specification Gaps preserved */}
+              {selectedTestCase.specification_gaps && selectedTestCase.specification_gaps.length > 0 && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#f87171', fontWeight: 700, marginBottom: '6px' }}>
+                    Specification Gaps Acknowledged by AI (Zero Hallucination)
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {selectedTestCase.specification_gaps.map((gap: string) => (
+                      <span key={gap} className="badge badge-fail font-mono" style={{ fontSize: '11px' }}>
+                        {gap}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Simulation Result Banner if executed */}
               {selectedTestCase.latest_result && (
                 <div style={{

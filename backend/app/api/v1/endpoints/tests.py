@@ -75,6 +75,12 @@ def get_test_cases(
             "specification_gaps": t.specification_gaps,
             "is_ai_generated": t.is_ai_generated,
             "status": t.status,
+            "generation_provider": t.generation_provider,
+            "generation_model": t.generation_model,
+            "generation_status": t.generation_status,
+            "validation_status": t.validation_status,
+            "validation_findings": t.validation_findings,
+            "traceability": t.traceability,
             "latest_result": res_data
         })
 
@@ -138,5 +144,12 @@ def get_test_case_detail(id: str, db: Session = Depends(get_db)):
         "specification_gaps": t.specification_gaps,
         "is_ai_generated": t.is_ai_generated,
         "status": t.status,
+        "generation_provider": t.generation_provider,
+        "generation_model": t.generation_model,
+        "generation_status": t.generation_status,
+        "validation_status": t.validation_status,
+        "validation_findings": t.validation_findings,
+        "traceability": t.traceability,
+        "generation_context": t.generation_context,
         "latest_result": res_data
     }

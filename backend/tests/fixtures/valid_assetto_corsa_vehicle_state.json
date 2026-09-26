@@ -1,0 +1,71 @@
+{
+  "schema_version": "pusv.vehicle-state.v1",
+  "timestamp": 1727000000.125,
+  "source": {
+    "type": "assetto_corsa",
+    "simulator": "assetto_corsa",
+    "provider": "assetto_corsa_gym",
+    "version": "1.0.4",
+    "session_id": "AC-SESSION-20260926-001"
+  },
+  "vehicle": {
+    "speed_kmh": 82.5,
+    "rpm": 4200,
+    "gear": 4,
+    "throttle": 0.35,
+    "brake": 0.92,
+    "steering_angle_deg": -8.5,
+    "acceleration": {
+      "longitudinal_g": -0.81,
+      "lateral_g": 0.28,
+      "vertical_g": 0.12
+    }
+  },
+  "wheels": {
+    "FL": {
+      "slip": 0.61,
+      "load_n": 3400.0,
+      "pressure_bar": 2.05,
+      "suspension_travel": 0.42,
+      "tyre_temperature_c": 71.2,
+      "brake_temperature_c": 420.0
+    },
+    "FR": {
+      "slip": 0.58,
+      "load_n": 3380.0,
+      "pressure_bar": 2.04,
+      "suspension_travel": 0.40,
+      "tyre_temperature_c": 70.8,
+      "brake_temperature_c": 415.0
+    },
+    "RL": {
+      "slip": 0.21,
+      "load_n": 2910.0,
+      "pressure_bar": 2.10,
+      "suspension_travel": 0.31,
+      "tyre_temperature_c": 64.5,
+      "brake_temperature_c": 280.0
+    },
+    "RR": {
+      "slip": 0.20,
+      "load_n": 2890.0,
+      "pressure_bar": 2.09,
+      "suspension_travel": 0.30,
+      "tyre_temperature_c": 64.2,
+      "brake_temperature_c": 278.0
+    }
+  },
+  "environment": {
+    "road_wetness": 75.0,
+    "road_roughness": 60.0,
+    "traffic_density": 80.0,
+    "front_obstacle_distance_m": 18.5,
+    "pedestrian_distance_m": null,
+    "motorcycle_distance_m": 6.2,
+    "traffic_signal": "RED"
+  },
+  "sensors": {
+    "camera_confidence": 92.0,
+    "radar_confidence": 88.0
+  }
+}

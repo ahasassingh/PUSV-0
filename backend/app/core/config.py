@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     REFERENCE_VEHICLE: str = "PUSV-01"
     SW_VERSION: str = "PUSV-SW-0.1"
+    MAX_VEHICLE_STATE_UPLOAD_BYTES: int = 5 * 1024 * 1024  # 5 MB
+    MAX_REQUIREMENT_UPLOAD_MB: int = 10
+    MAX_REQUIREMENT_UPLOAD_BYTES: int = 10 * 1024 * 1024  # 10 MB
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "mock")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 

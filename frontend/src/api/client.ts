@@ -79,6 +79,14 @@ export interface RequirementItem {
   dependencies: string[];
   safety_relevance: string;
   completeness_status: string;
+  source_type?: string;
+  document_id?: string;
+  source_traceability?: {
+    source_document?: string;
+    source_page?: number;
+    source_section?: string;
+    source_location?: string;
+  };
   gaps: Array<{
     id: string;
     gap_type: string;
@@ -89,6 +97,19 @@ export interface RequirementItem {
     status: string;
   }>;
   test_count: number;
+}
+
+export interface RequirementUploadResult {
+  document_id: string;
+  filename: string;
+  status: string;
+  extraction_status: string;
+  requirements_detected: number;
+  requirements_imported: number;
+  duplicates: number;
+  specification_gaps: number;
+  warnings: string[];
+  duplicate_details: Array<{ req_code: string; reason: string }>;
 }
 
 export interface ScenarioItem {
@@ -127,6 +148,19 @@ export interface TestCaseItem {
   specification_gaps: string[];
   is_ai_generated: boolean;
   status: string;
+  generation_provider?: string;
+  generation_model?: string;
+  generation_status?: string;
+  validation_status?: string;
+  validation_findings?: Array<{ code: string; message: string }>;
+  traceability?: {
+    requirement_id?: string;
+    source_document?: string;
+    source_page?: number;
+    source_section?: string;
+    source_location?: string;
+  };
+  generation_context?: any;
   latest_result?: {
     id: string;
     test_case_id: string;
@@ -136,6 +170,40 @@ export interface TestCaseItem {
     telemetry_data: Array<{ time_ms: number; ego_speed: number; brake_pressure: number; state: string }>;
     log_trace: string[];
   };
+}
+
+export interface TestGenerationRequest {
+  requirement_ids: string[];
+  categories?: string[];
+  tests_per_requirement?: number;
+  provider?: string;
+}
+
+export interface TestGenerationResponse {
+  run_id: string;
+  provider: string;
+  model: string;
+  requested_requirements: number;
+  generated_tests_count: number;
+  validation_summary: {
+    VALID: number;
+    REQUIRES_REVIEW: number;
+    INVALID: number;
+  };
+  test_cases: TestCaseItem[];
+}
+
+export interface TestGenerationRunHistoryItem {
+  id: string;
+  provider: string;
+  model?: string;
+  timestamp: string;
+  requested_requirement_count: number;
+  generated_test_count: number;
+  validation_status: string;
+  error_message?: string;
+  requirement_ids: string[];
+  generated_test_ids: string[];
 }
 
 export interface SpecificationGapItem {
@@ -205,6 +273,20 @@ export const api = {
     return res.json();
   },
 
+  async uploadRequirementDocument(file: File): Promise<RequirementUploadResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/requirements/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to upload requirement document' }));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return res.json();
+  },
+
   async getRequirements(filters?: { system?: string; status?: string; search?: string }): Promise<RequirementItem[]> {
     const params = new URLSearchParams();
     if (filters?.system) params.append('system', filters.system);
@@ -267,6 +349,41 @@ export const api = {
       body: JSON.stringify({ test_case_id: testCaseId, overrides })
     });
     if (!res.ok) throw new Error('Failed to run simulation');
+    return res.json();
+  },
+
+  async generateTestCases(req: TestGenerationRequest): Promise<TestGenerationResponse> {
+    const res = await fetch(`${API_BASE}/test-generation/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to generate test cases' }));
+      throw new Error(err.detail || 'Test generation failed');
+    }
+    return res.json();
+  },
+
+  async getGenerationContext(requirementId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/test-generation/context/${encodeURIComponent(requirementId)}`);
+    if (!res.ok) throw new Error('Failed to fetch test generation context');
+    return res.json();
+  },
+
+  async validateTestCase(testCase: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/test-generation/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testCase)
+    });
+    if (!res.ok) throw new Error('Failed to validate test case');
+    return res.json();
+  },
+
+  async getGenerationHistory(): Promise<TestGenerationRunHistoryItem[]> {
+    const res = await fetch(`${API_BASE}/test-generation/history`);
+    if (!res.ok) throw new Error('Failed to fetch generation history');
     return res.json();
   }
 };

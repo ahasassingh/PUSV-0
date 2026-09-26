@@ -1,0 +1,17 @@
+{
+  "schema_version": "pusv.vehicle-state.v1",
+  "timestamp": 1727000000.125,
+  "source": {
+    "type": "assetto_corsa",
+    "provider": "assetto_corsa_gym"
+  },
+  "vehicle": {
+    "speed_kmh": 60.0,
+    "gear": "fourth"
+  },
+  "wheels": {
+    "FL": {
+      "pressure_bar": "low_pressure"
+    }
+  }
+}

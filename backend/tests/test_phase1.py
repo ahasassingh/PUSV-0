@@ -10,34 +10,9 @@ from app.models.vehicle import Vehicle, ECU, Sensor, Actuator, Signal
 from app.models.requirement import Requirement, SpecificationGap
 from app.models.scenario import Scenario
 from app.models.test_case import TestCase
+from app.models.vehicle_state import VehicleStateRecord
 
-# Test SQLite in-memory database with StaticPool so all threads/sessions share the same DB
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    seed_database(db)
-    db.close()
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+from tests.conftest import TestingSessionLocal, test_client as client, test_engine
 
 def test_health_endpoint():
     response = client.get("/health")

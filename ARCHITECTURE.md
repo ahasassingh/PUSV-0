@@ -122,27 +122,46 @@ Sensors:
 
 ---
 
-## 4. AI Provider & Prompt Architecture
+## 4. Phase 3: AI Test Generation & Deterministic Validation Architecture
 
-### 4.1 AIProvider Interface
-```python
-class AIProvider(ABC):
-    @abstractmethod
-    async def generate_test_cases(
-        self,
-        requirement: NormalizedRequirement,
-        vehicle_context: VehicleArchitectureContext,
-        scenario: OperationalScenario,
-    ) -> List[TestCaseProposal]:
-        pass
+### 4.1 Canonical Pipeline
+```
+Requirement Document
+        ↓
+Requirement Parser
+        ↓
+Normalized Requirement
+        ↓
+Specification Gap Analysis
+        ↓
+Context Assembly (PUSV-01 Vehicle, ECUs, Sensors, Signals, Existing Gaps)
+        ↓
+AI Test Generator (Provider Abstraction: Gemini / Deterministic Mock)
+        ↓
+Structured Test Case
+        ↓
+Deterministic Test Validator (12 Anti-Hallucination Quality Rules)
+        ↓
+Engineering Review (VALID / REQUIRES_REVIEW / INVALID)
+        ↓
+Future Test Execution (Phase 6)
 ```
 
-### 4.2 Guardrails Against Safety Hallucination
-- The LLM is provided with explicit knowledge graph constraints:
-  - Valid CAN signal identifiers, units, and ranges.
-  - Participating ECUs and their explicit functional boundaries.
-- **Rule of Non-Hallucination**: If the source requirement text omits quantitative thresholds (e.g., "detect loss within X ms"), the prompt requires emitting a `SpecificationGap` token instead of estimating numerical figures.
-- Structured JSON output is parsed by Pydantic; schema violations trigger an automatic corrective reflection loop.
+> **Critical Distinction**: Phase 3 generates and validates test definitions. It does NOT execute tests. A `validation_status` of `VALID` means the test case is structurally, semantically, and architecturally verified for future execution — not that the physical vehicle passed a test.
+
+### 4.2 AIProvider Interface & Implementations
+- `BaseAIProvider`: Abstract base class with `generate_test_cases(context, categories, tests_per_requirement)`.
+- `MockAIProvider`: Deterministic, offline, zero-hallucination test generator (`generation_provider = "mock"`).
+- `GeminiAIProvider`: Google GenAI / REST integration using structured JSON schemas and strict engineering guardrails. Automatically falls back to `MockAIProvider` when `GEMINI_API_KEY` is not configured.
+
+### 4.3 Deterministic Test Validator (`TestCaseValidator`)
+Enforces the core rule: **"AI generates. Deterministic systems validate."**
+- Verifies requirement existence and traceability.
+- Validates expected results and definitive pass/fail criteria.
+- **Zero Hallucination of Thresholds**: Prevents fabricated numerical metrics (e.g. yaw rates, deceleration g-forces) for ambiguous requirements.
+- **Zero Hallucination of Timing**: Detects and rejects any timing constraint not stated in the source requirement.
+- **Specification Gap Preservation**: If a requirement has `MISSING_TIMEOUT` or `AMBIGUOUS_BOUNDARY`, the validator ensures the gap is acknowledged and flags `REQUIRES_REVIEW`.
+- Rejects any test that falsely claims execution outcome (`PASS`/`FAIL`/`BLOCKED`).
 
 ---
 

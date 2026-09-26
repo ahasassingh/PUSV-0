@@ -106,9 +106,31 @@
 - `timing_constraint` (String) — latency/cycle limits or `null`
 - `safety_relevance` (String) — `"ASIL-A"`, `"ASIL-B"`, `"ASIL-C"`, `"ASIL-D"`, `"QM"`
 - `completeness_status` (String) — `"COMPLETE"`, `"INCOMPLETE"`, `"AMBIGUOUS"`, `"CONTRADICTORY"`
+- `source_type` (String) — `"seed"` or `"uploaded_document"`
+- `document_id` (String, FK `requirement_documents.id`)
+- `source_document` (String) — e.g. `"vehicle_safety_spec_v1.pdf"`
+- `source_page` (Integer) — e.g. `14`
+- `source_section` (String) — e.g. `"4.2.3"`
+- `source_location` (String) — e.g. `"paragraph-7"`
+- `source_traceability_json` (JSON) — structured traceability object
 - `created_at` (DateTime)
 
-### 2.7 `specification_gaps`
+### 2.7 `requirement_documents`
+- `id` (String, PK) — e.g., `"doc_a1b2c3d4e5"`
+- `original_filename` (String) — e.g., `"chassis_safety_spec.docx"`
+- `sanitized_filename` (String) — sanitized safe name
+- `file_type` (String) — `".txt"`, `".pdf"`, `".docx"`
+- `file_size_bytes` (Integer)
+- `upload_timestamp` (DateTime)
+- `extraction_status` (String) — `"SUCCESS"`, `"PARTIAL"`, `"EXTRACTION_FAILED_SCANNED_PDF"`
+- `extraction_error` (Text)
+- `imported_requirement_count` (Integer)
+- `duplicate_count` (Integer)
+- `specification_gap_count` (Integer)
+- `processing_status` (String) — `"COMPLETED"`
+- `created_at` (DateTime)
+
+### 2.8 `specification_gaps`
 - `id` (String, PK) — e.g., `"gap_021"`
 - `requirement_id` (String, FK `requirements.id`)
 - `gap_type` (String) — `"MISSING_THRESHOLD"`, `"MISSING_TIMEOUT"`, `"MISSING_RECOVERY"`, `"AMBIGUOUS_BOUNDARY"`
@@ -153,9 +175,28 @@
 - `specification_gaps` (JSON) — gaps unmasked by this test
 - `is_ai_generated` (Boolean) — `true`
 - `status` (String) — `"PROPOSED"`, `"VALIDATED"`, `"BLOCKED"`
+- `generation_provider` (String, Indexed) — `"mock"`, `"gemini"`
+- `generation_model` (String) — `"gemini-1.5-pro"`, `"rule-based-mock-engine"`
+- `generation_status` (String) — `"GENERATED"`, `"REQUIRES_REVIEW"`, `"FAILED"`
+- `validation_status` (String, Indexed) — `"VALID"`, `"REQUIRES_REVIEW"`, `"INVALID"`
+- `validation_findings_json` (JSON) — array of `{code, message}` findings
+- `traceability_json` (JSON) — `{requirement_id, source_document, source_page, source_section}`
+- `generation_context_json` (JSON) — snapshot of controlled context assembled for AI
 - `created_at` (DateTime)
 
-### 2.10 `test_results`
+### 2.10 `test_generation_runs` (Phase 3 Audit Trail)
+- `id` (String, PK) — e.g. `"RUN-4A5B6C7D"`
+- `provider` (String, Indexed) — `"mock"`, `"gemini"`
+- `model` (String) — model identifier
+- `timestamp` (DateTime, UTC)
+- `requested_requirement_count` (Integer)
+- `generated_test_count` (Integer)
+- `validation_status` (String) — `"VALID"`, `"REQUIRES_REVIEW"`, `"INVALID"`, `"MIXED"`
+- `error_message` (Text, Nullable)
+- `requirement_ids_json` (JSON) — list of requested requirement IDs
+- `generated_test_ids_json` (JSON) — list of generated test case codes
+
+### 2.11 `test_results`
 - `id` (String, PK)
 - `test_case_id` (String, FK `test_cases.id`)
 - `status` (String) — `"PASS"`, `"FAIL"`, `"BLOCKED"`

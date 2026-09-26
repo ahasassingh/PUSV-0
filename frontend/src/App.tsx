@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { 
   Activity, FileText, Cpu, Layers, Zap, Play, 
-  Gauge, AlertTriangle, FileSpreadsheet 
+  Gauge, AlertTriangle, FileSpreadsheet, Compass 
 } from 'lucide-react';
 import { DashboardView } from './components/DashboardView';
 import { RequirementsView } from './components/RequirementsView';
+import { VehicleDataView } from './components/VehicleDataView';
 import { VehicleArchitectureView } from './components/VehicleArchitectureView';
 import { ScenariosView } from './components/ScenariosView';
 import { TestCasesView } from './components/TestCasesView';
@@ -19,6 +20,7 @@ export function App() {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
     { id: 'requirements', label: 'Requirements', icon: FileText },
+    { id: 'vehicle-data', label: 'Vehicle Data', icon: Compass },
     { id: 'architecture', label: 'Vehicle Architecture', icon: Cpu },
     { id: 'scenarios', label: 'Scenarios', icon: Layers },
     { id: 'tests', label: 'Test Cases', icon: Zap },
@@ -133,6 +135,7 @@ export function App() {
       <main style={{ flex: 1, padding: '24px', maxWidth: '1600px', width: '100%', margin: '0 auto' }}>
         {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
         {activeTab === 'requirements' && <RequirementsView />}
+        {activeTab === 'vehicle-data' && <VehicleDataView />}
         {activeTab === 'architecture' && <VehicleArchitectureView />}
         {activeTab === 'scenarios' && <ScenariosView />}
         {activeTab === 'tests' && <TestCasesView />}
